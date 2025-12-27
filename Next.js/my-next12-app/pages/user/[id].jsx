@@ -1,5 +1,7 @@
 // APPROACH 1 --> CLIENT SIDE RENDERING
 
+import { useRouter } from "next/router";
+
 // import { useRouter } from "next/router";
 // import React, { useEffect, useState } from "react";
 
@@ -39,10 +41,10 @@
 
 // export default SingleUser;
 
-
 // APPROACH 2 --> SERVER SIDE RENDERING
-// const SingleUser = ({product, id}) => {
-  
+// const SingleUser = ({ product, id }) => {
+//   console.log("weill render on client");
+
 //   return (
 //     <>
 //       <header className="bg-red-300 p-5">
@@ -60,21 +62,27 @@
 // export default SingleUser;
 
 // export const getServerSideProps = async (context) => {
-//   const id = context?.params?.id
+//   console.log("this will run on server");
+
+//   const id = context?.params?.id;
 //   const res = await fetch(`https://dummyjson.com/products/${id}`);
 //   const data = await res.json();
 //   return {
 //     props: {
 //       product: data,
-//       id: id
-//     }
-//   }
-// }
+//       id: id,
+//     },
+//   };
+// };
 
+// // APPROACH 3 --> SSG
 
-// APPROACH 3 --> SSG
+const SingleUser = ({ product, id }) => {
+  const router = useRouter();
 
-const SingleUser = ({product, id}) => {
+  if (router.isFallback) {
+    return <p>Loading...</p>;
+  }
   return (
     <>
       <header className="bg-red-300 p-5">
@@ -92,36 +100,37 @@ const SingleUser = ({product, id}) => {
 export default SingleUser;
 
 export const getStaticPaths = async () => {
-    const res = await fetch(`https://dummyjson.com/products/`);
-    const data = await res.json();
-    const products = data.products;
+  const res = await fetch(`https://dummyjson.com/products/`);
+  const data = await res.json();
+  const products = data.products;
 
-    const paths = products.map((product) => ({
-      params: {id: product.id.toString()}
-    }))
+  const paths = products.map((product) => ({
+    params: { id: product.id.toString() },
+  }));
 
-    return {
-      paths,
-      fallback: "blocking"
-    }
-}
+  return {
+    paths,
+    fallback: false,
+  };
+};
 
 export const getStaticProps = async (context) => {
-  const id = context?.params?.id
+  const id = context?.params?.id;
   const res = await fetch(`https://dummyjson.com/products/${id}`);
   const data = await res.json();
   console.log("here!!");
 
-  if(!data || !data.id){
+  if (!data || !data.id) {
     return {
-      notFound: true
-    }
+      notFound: true,
+    };
   }
 
   return {
     props: {
       product: data,
-      id: id
-    }
-  }
-}
+      id: id,
+    },
+    revalidate: 60,
+  };
+};
